@@ -1,15 +1,59 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Donusaurus POS 🦖</title>
+  <title>Donusaurus POS</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background:#f5f5f5;
+      padding:20px;
+    }
+
+    .card {
+      background:white;
+      padding:20px;
+      border-radius:12px;
+      max-width:500px;
+      box-shadow:0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    button {
+      margin:4px;
+      padding:6px 10px;
+      border-radius:6px;
+      border:none;
+      cursor:pointer;
+    }
+
+    .rasa button {
+      background:#eee;
+    }
+
+    .add { background:#4CAF50; color:white; }
+    .minus { background:#f44336; color:white; }
+    .bayar { background:#FF9800; color:white; }
+    .print { background:#6c63ff; color:white; }
+
+  </style>
 </head>
 
 <body>
 
-<h2>🍩 Donusaurus POS</h2>
+<div class="card">
 
-<button onclick="addItem('Donat (1 pcs)', 8000)">Tambah Donat 1pcs</button>
-<button onclick="addItem('Donat Box (6 pcs)', 45000)">Tambah Box</button>
+<h2>
+<img src="https://i.imgur.com/MubvKvS.png" width="30">
+Donusaurus POS
+</h2>
+
+<h3>Pilih Rasa (Max 6)</h3>
+
+<div class="rasa" id="rasaList"></div>
+
+<p id="info">Dipilih: 0/6</p>
+
+<button class="add" onclick="tambahKeKeranjang()">+ Tambah ke Keranjang</button>
 
 <h3>Keranjang</h3>
 <div id="cart"></div>
@@ -23,200 +67,193 @@
 
 <br><br>
 
-<button onclick="checkout()">💰 Bayar</button>
-<button onclick="printNota()">🖨️ Print Struk</button>
+<button class="bayar" onclick="checkout()">💰 Bayar</button>
+<button class="print" onclick="printNota()">🖨️ Print</button>
+
+</div>
 
 <div id="struk" style="display:none;"></div>
 
 <script>
 
-// 🔥 SUDAH DIISI LINK KAMU
 const API_URL = "https://script.google.com/macros/s/AKfycbwCcACselUrqfBcaxrif7rVGjyJVjUGNc2N2XqSgyZMtqh8FM6Ta8iUVsz5BEDpXPzuow/exec";
 
+const menu = [
+"Abon","Blueberry","Ceres","Matcha","Tiramisu","Strawberry"
+];
+
+let pilihan = {};
 let cart = [];
 let lastData = null;
 let lastPayload = null;
 
-// =====================
-// TAMBAH ITEM
-// =====================
-function addItem(nama, harga){
+menu.forEach(r=>{
+  pilihan[r]=0;
+});
+
+renderRasa();
+
+function renderRasa(){
+  let html="";
+  for(let r in pilihan){
+    html+=`
+    <div>
+      ${r}
+      <button onclick="add('${r}')">+</button>
+      ${pilihan[r]}
+      <button onclick="minus('${r}')">-</button>
+    </div>
+    `;
+  }
+  document.getElementById("rasaList").innerHTML=html;
+  updateInfo();
+}
+
+function add(r){
+  if(totalDipilih()<6){
+    pilihan[r]++;
+    renderRasa();
+  }
+}
+
+function minus(r){
+  if(pilihan[r]>0){
+    pilihan[r]--;
+    renderRasa();
+  }
+}
+
+function totalDipilih(){
+  return Object.values(pilihan).reduce((a,b)=>a+b,0);
+}
+
+function updateInfo(){
+  document.getElementById("info").innerText =
+  "Dipilih: "+totalDipilih()+"/6";
+}
+
+function tambahKeKeranjang(){
+
+  if(totalDipilih()===0){
+    alert("Pilih rasa dulu!");
+    return;
+  }
+
+  let rasaDipilih=[];
+  for(let r in pilihan){
+    if(pilihan[r]>0){
+      rasaDipilih.push(r+" ("+pilihan[r]+"x)");
+    }
+  }
+
+  let item = totalDipilih()==6 ?
+    "1x Donat Box (6 pcs)" :
+    "1x Donat ("+totalDipilih()+" pcs)";
+
+  let harga = totalDipilih()==6 ? 45000 : totalDipilih()*8000;
+
   cart.push({
-    item: "1x " + nama,
-    rasa: "-",
-    price: harga
+    item:item,
+    rasa:rasaDipilih.join(", "),
+    price:harga
   });
+
+  pilihan={};
+  menu.forEach(r=>pilihan[r]=0);
+
+  renderRasa();
   renderCart();
 }
 
-// =====================
-// RENDER KERANJANG
-// =====================
 function renderCart(){
-  let html = "";
-  let total = 0;
+  let html="";
+  let total=0;
 
   cart.forEach((c,i)=>{
-    total += c.price;
-    html += `<div>${c.item} - Rp${formatRupiah(c.price)}</div>`;
+    total+=c.price;
+    html+=`
+    <div>
+      ${c.item} | ${c.rasa} | Rp${c.price}
+    </div>`;
   });
 
-  document.getElementById("cart").innerHTML = html;
-  document.getElementById("total").innerText = total;
+  document.getElementById("cart").innerHTML=html;
+  document.getElementById("total").innerText=total;
 }
 
-// =====================
-// CHECKOUT
-// =====================
 async function checkout(){
 
-  if(cart.length === 0){
+  if(cart.length===0){
     alert("Keranjang kosong!");
     return;
   }
 
-  let metode = document.getElementById("metode").value;
-  let total = cart.reduce((s,c)=>s+c.price,0);
+  let metode=document.getElementById("metode").value;
+  let total=cart.reduce((s,c)=>s+c.price,0);
 
-  let payload = {
-    item: cart.map(c => c.item).join(" | "),
-    detailRasa: cart.map(c => c.rasa).join(" | "),
-    harga: cart.map(c => c.price).join(" | "),
-    total: total,
-    metode: metode
+  let payload={
+    item:cart.map(c=>c.item).join(" | "),
+    detailRasa:cart.map(c=>c.rasa).join(" | "),
+    harga:cart.map(c=>c.price).join(" | "),
+    total:total,
+    metode:metode
   };
 
-  let res = await fetch(API_URL, {
+  let res=await fetch(API_URL,{
     method:"POST",
-    body: JSON.stringify(payload)
+    body:JSON.stringify(payload)
   });
 
-  let data = await res.json();
+  let data=await res.json();
 
-  if(data.status === "success"){
+  if(data.status==="success"){
+    alert("Order berhasil!");
 
-    alert("Order berhasil!\n#" + data.orderID + " / " + data.kodeUnik);
+    window.open(data.invoice,"_blank");
 
-    // buka PDF
-    window.open(data.invoice, "_blank");
+    lastData=data;
+    lastPayload=payload;
 
-    // simpan buat print
-    lastData = data;
-    lastPayload = payload;
-
-  } else {
-    alert("Struk gagal dibuat!");
+  }else{
+    alert("Error");
   }
 
-  cart = [];
+  cart=[];
   renderCart();
 }
 
-// =====================
-// PRINT MANUAL
-// =====================
 function printNota(){
-
   if(!lastData){
     alert("Belum ada transaksi!");
     return;
   }
 
-  printStruk(lastData, lastPayload);
-}
+  let struk=document.getElementById("struk");
 
-// =====================
-// PRINT STRUK
-// =====================
-function printStruk(data, payload){
+  struk.innerHTML=`
+  <div style="width:220px;font-family:Courier New;font-size:12px;">
 
-  let struk = document.getElementById("struk");
+  <center>
+  <img src="https://i.imgur.com/MubvKvS.png" width="40"><br>
+  Donusaurus<br>
+  </center>
 
-  struk.innerHTML = `
-  <div style="
-    width:220px;
-    font-family:'Courier New', monospace;
-    font-size:12px;
-    line-height:1.7;
-  ">
+  <hr>
 
-    <div style="text-align:center; margin-bottom:10px;">
-      <img src="https://i.imgur.com/MubvKvS.png" style="width:45px;"><br>
-      Donusaurus<br>
-      Cabang Sungai Jawi<br>
-      Jln. H Rais A Rahman No.171B
-    </div>
+  ${lastPayload.item}<br>
+  ${lastPayload.detailRasa}
 
-    <hr>
+  <hr>
 
-    Order ID : #${data.orderID} / ${data.kodeUnik}<br>
-    Tanggal  : ${formatTanggal()}
-
-    <hr>
-
-    ${formatItems(payload)}
-
-    <hr>
-
-    <div style="display:flex; justify-content:space-between;">
-      <span>Total</span>
-      <span>Rp${formatRupiah(payload.total)}</span>
-    </div>
-
-    <div style="display:flex; justify-content:space-between;">
-      <span>Metode</span>
-      <span>${payload.metode}</span>
-    </div>
-
-    <hr>
-
-    <div style="text-align:center;">
-      -------- Thankyou --------
-    </div>
+  Total Rp${lastPayload.total}<br>
+  ${lastPayload.metode}
 
   </div>
   `;
 
-  struk.style.display = "block";
+  struk.style.display="block";
   window.print();
-  struk.style.display = "none";
-}
-
-// =====================
-// FORMAT
-// =====================
-function formatTanggal(){
-  let d = new Date();
-  return d.toLocaleDateString("id-ID") + ", " +
-         d.toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"});
-}
-
-function formatRupiah(a){
-  return a.toLocaleString("id-ID");
-}
-
-function formatItems(p){
-
-  let items = p.item.split(" | ");
-  let harga = p.harga.split(" | ");
-
-  let out = "";
-
-  items.forEach((it,i)=>{
-
-    let qty = parseInt(it.match(/\d+/)) || 1;
-    let h = parseInt(harga[i]);
-    let sub = qty * h;
-
-    out += `
-    <div style="display:flex; justify-content:space-between;">
-      <span>${it}</span>
-      <span>${formatRupiah(h)} ${formatRupiah(sub)}</span>
-    </div><br>
-    `;
-  });
-
-  return out;
+  struk.style.display="none";
 }
 
 </script>
