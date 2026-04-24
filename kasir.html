@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Donusaurus POS 🦖</title>
+</head>
+
+<body style="font-family:sans-serif; text-align:center;">
+
+<h2>🦖 Donusaurus POS</h2>
+
+<h3>Pilih Jenis</h3>
+<select id="jenis" onchange="updateSelected()">
+  <option value="pcs">Pcs</option>
+  <option value="box">Box (6 pcs)</option>
+</select>
+
+<h3>Jumlah</h3>
+
+<button onclick="changeQty(-1)">➖</button>
+<span id="qtyDisplay">1</span>
+<button onclick="changeQty(1)">➕</button>
+
+<hr>
+
+<h3>Pilih Rasa</h3>
+
+<div id="flavorContainer"></div>
+
+<p id="selected"></p>
+<p id="infoRasa"></p>
+
+<button onclick="addToCart()">➕ Tambah ke Keranjang</button>
+
+<hr>
+
+<h3>🛒 Keranjang</h3>
+<ul id="cartList"></ul>
+
+<h3 id="total">Total: Rp0</h3>
+
+<hr>
+
+<h3>Metode Pembayaran</h3>
+<select id="metode">
+  <option>Cash</option>
+  <option>QRIS</option>
+  <option>GoFood</option>
+  <option>GrabFood</option>
+  <option>ShopeeFood</option>
+</select>
+
+<br><br>
+
+<button onclick="checkout()">💰 Bayar</button>
+
+<script>
+
+const API_URL = "https://script.google.com/macros/s/AKfycbwCcACselUrqfBcaxrif7rVGjyJVjUGNc2N2XqSgyZMtqh8FM6Ta8iUVsz5BEDpXPzuow/exec";
+
+let qty = 1;
+let flavors = {};
+let cart = [];
+
+const flavorList = [
+"Abon","Blueberry","Caramel","Ceres Jadul","Cheese",
+"Choco Ceres","Choco Cookies","Choco Crunch","Choco Peanut",
+"Creme Brule","Gula Halus","Lotus Biscoff","Matcha Crunch",
+"Oreo","Original Glaze","Pistachio","Red Velvet",
+"Srikaya","Strawberry Sprinkle","Tiramisu Almond"
+];
+
+document.getElementById("flavorContainer").innerHTML =
+flavorList.map(f => `
+<div style="margin:4px;">
+<button onclick="addFlavor('${f}')">${f} ➕</button>
+<button onclick="removeFlavor('${f}')">➖</button>
+</div>
+`).join("");
+
+function changeQty(val){
+  qty += val;
+  if(qty < 1) qty = 1;
+  document.getElementById("qtyDisplay").innerText = qty;
+  updateSelected();
+}
+
+function addFlavor(name){
+  flavors[name] = (flavors[name] || 0) + 1;
+  updateSelected();
+}
+
+function removeFlavor(name){
+  if(flavors[name]){
+    flavors[name]--;
+    if(flavors[name] <= 0) delete flavors[name];
+    updateSelected();
+  }
+}
+
+function updateSelected(){
+  let type = document.getElementById("jenis").value;
+  let totalDonut = type === "box" ? qty * 6 : qty;
+
+  let totalSelected = Object.values(flavors).reduce((a,b)=>a+b,0);
+  let sisa = totalDonut - totalSelected;
+
+  document.getElementById("selected").innerText =
+    Object.entries(flavors).map(([k,v])=>`${k} (${v}x)`).join(", ");
+
+  document.getElementById("infoRasa").innerText =
+    `Dipilih: ${totalSelected}/${totalDonut} | Sisa: ${sisa}`;
+}
+
+function calculatePrice(type, qty){
+  if(type === "pcs"){
+    if(qty === 1) return 8000;
+    if(qty === 3) return 24000;
+    return qty * 8000;
+  }
+
+  if(type === "box"){
+    if(qty === 1) return 45000;
+    if(qty >= 2) return 42500 * qty;
+  }
+
+  return 0;
+}
+
+function addToCart(){
+  let type = document.getElementById("jenis").value;
+  let totalDonut = type === "box" ? qty * 6 : qty;
+
+  let totalSelected = Object.values(flavors).reduce((a,b)=>a+b,0);
+
+  if(totalSelected !== totalDonut){
+    alert("Jumlah rasa belum sesuai!");
+    return;
+  }
+
+  let price = calculatePrice(type, qty);
+
+  cart.push({
+    item: type + " x" + qty,
+    rasa: Object.entries(flavors).map(([k,v])=>`${k} (${v}x)`).join(", "),
+    price: price
+  });
+
+  flavors = {};
+  updateCart();
+}
+
+function updateCart(){
+  let list = document.getElementById("cartList");
+  list.innerHTML = "";
+
+  let total = 0;
+
+  cart.forEach((c,i)=>{
+    let li = document.createElement("li");
+    li.innerHTML = `${c.item} | ${c.rasa} | Rp${c.price}
+    <button onclick="removeItem(${i})">❌</button>`;
+    list.appendChild(li);
+
+    total += c.price;
+  });
+
+  document.getElementById("total").innerText = "Total: Rp" + total;
+}
+
+function removeItem(i){
+  cart.splice(i,1);
+  updateCart();
+}
+
+function checkout(){
+  if(cart.length === 0){
+    alert("Keranjang kosong!");
+    return;
+  }
+
+  let metode = document.getElementById("metode").value;
+  let total = cart.reduce((sum,c)=>sum+c.price,0);
+
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      item: cart.map(c=>c.item).join(" | "),
+      detailRasa: cart.map(c=>c.rasa).join(" | "),
+      addOn: "-",
+      total: total,
+      metode: metode
+    })
+  })
+  .then(res=>res.json())
+  .then(data=>{
+    alert("Order berhasil!\n#" + data.orderID + "/" + data.kodeUnik);
+
+    if(data.invoice){
+      window.open(data.invoice, "_blank");
+    } else {
+      alert("Struk gagal dibuat");
+    }
+
+    cart = [];
+    updateCart();
+  });
+}
+
+</script>
+
+</body>
+</html>
