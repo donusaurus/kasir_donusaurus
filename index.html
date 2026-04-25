@@ -58,6 +58,9 @@ Jumlah:
 <select id="metode">
 <option>Cash</option>
 <option>QRIS</option>
+<option>Gofood</option>
+<option>Grabfood</option>
+<option>Shopeefood</option>
 </select>
 
 <br><br>
@@ -160,8 +163,8 @@ rasaDipilih.push(r+" ("+pilihan[r]+"x)");
 }
 
 let label = cfg.tipe==="pcs"
-? cfg.qty+" pcs"
-: cfg.qty+"x Donat (6 pcs)";
+? cfg.qty+"x Pcs Donat"
+: cfg.qty+"x Box Donat (6 pcs)";
 
 cart.push({
 item:label,
@@ -245,22 +248,24 @@ let rows="";
 
 items.forEach((it,i)=>{
 let h=harga[i];
+let qty = parseInt(it.split("x")[0]) || 1;
+let hargaSatuan = Math.round(h / qty);
 
 rows+=`
 <tr>
-<td colspan="3">${it}</td>
-</tr>
-<tr>
-<td colspan="3">@Rp${rp(h)}</td>
+<td>${it} @Rp${rp(hargaSatuan)}</td>
+<td style="text-align:right">Rp${rp(h)}</td>
 </tr>`;
 
 let rasa=rasaAll[i]||"";
 rasa.split(", ").forEach(r=>{
-rows+=`<tr><td colspan="3" style="padding-left:10px;font-size:10px;">- ${r}</td></tr>`;
+rows+=`<tr>
+<td colspan="2" style="padding-left:10px;font-size:10px;">- ${r}</td>
+</tr>`;
 });
 });
 
-let qrURL=`https://chart.googleapis.com/chart?chs=120x120&cht=qr&chl=${encodeURIComponent("Order:"+lastData.orderID+"|Total:"+lastPayload.total)}`;
+let qrURL=`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent("Order:"+lastData.orderID+"|Total:"+lastPayload.total)}`;
 
 let win=window.open("","","width=300,height=700");
 
@@ -268,17 +273,10 @@ win.document.write(`
 <html>
 <head>
 <style>
-
 @media print {
-  @page {
-    size: 58mm auto;
-    margin: 0;
-  }
-  body {
-    width: 58mm;
-  }
+  @page { size: 58mm auto; margin: 0; }
+  body { width: 58mm; }
 }
-
 body{
 font-family:monospace;
 width:220px;
@@ -286,35 +284,22 @@ margin:auto;
 font-size:11px;
 line-height:1.4;
 }
-
 .center{text-align:center;}
-
-table{
-width:100%;
-border-collapse:collapse;
-}
-
-td{padding:1px 0;}
-
-.line{
-border-top:1px dashed black;
-margin:6px 0;
-}
-
-.small{
-font-size:10px;
-opacity:0.8;
-}
-
+table{width:100%;border-collapse:collapse;}
+td{padding:2px 0;}
+td:first-child{width:70%;}
+td:last-child{width:30%;}
+.line{border-top:1px dashed black;margin:6px 0;}
+.small{font-size:10px;opacity:0.8;}
 </style>
 </head>
 
 <body>
 
 <div class="center">
-<img src="https://i.imgur.com/MubvKvS.png" style="width:50px;"><br>
+<img src="data:image/png;base64,${'iVBORw0KGgoAAAANSUhEUgAABOYAAATmCAIAAAAKnjl9AAEAAElEQVR4nOzddZxc1fnH8eece+/sZjey8RB3IQkWnASX4O5atECLy4+2UKQUaYsWKO5QaCnu0gIhAkkgEA9xl42uzr3nnN8fZ3ayUSyQu8nn/fr96Gbm7syd2Ul2vvM85znKWisAAAAAAGxMyv9H5S9w'}" style="width:60px;"><br>
 <b>DONUSAURUS</b><br>
-<span class="small">Sungai Jawi</span><br>
+<span class="small">Cabang Sungai Jawi</span><br>
 <span class="small">Jl. H Rais A Rahman No.171B</span>
 </div>
 
@@ -333,30 +318,22 @@ ${rows}
 
 <table>
 <tr>
-<td>Total</td>
-<td></td>
-<td style="text-align:right">Rp${rp(lastPayload.total)}</td>
+<td><b>Total</b></td>
+<td style="text-align:right"><b>Rp${rp(lastPayload.total)}</b></td>
 </tr>
 <tr>
 <td>Metode</td>
-<td></td>
 <td style="text-align:right">${lastPayload.metode}</td>
 </tr>
 </table>
 
 <div class="line"></div>
 
-<div class="center small">Scan untuk cek order</div>
+<div class="center small">Thank you</div>
+<div class="center small">Instagram: @donusaurus</div>
 
 <div class="center">
 <img src="${qrURL}" width="80">
-</div>
-
-<div class="center small">-------- Thankyou --------</div>
-
-<div class="center small">
-Follow us on Instagram<br>
-@donusaurus
 </div>
 
 <script>
