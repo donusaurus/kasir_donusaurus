@@ -100,6 +100,8 @@ function getConfig(){
 let tipe=document.getElementById("tipe").value;
 let qty=parseInt(document.getElementById("qty").value);
 
+if(isNaN(qty) || qty < 1) qty = 1;
+
 let totalPcs=0;
 let harga=0;
 
@@ -246,18 +248,19 @@ let h=harga[i];
 
 rows+=`
 <tr>
-<td>${it}</td>
-<td style="text-align:right">${rp(h)}</td>
-<td style="text-align:right">${rp(h)}</td>
+<td colspan="3">${it}</td>
+</tr>
+<tr>
+<td colspan="3">@Rp${rp(h)}</td>
 </tr>`;
 
 let rasa=rasaAll[i]||"";
 rasa.split(", ").forEach(r=>{
-rows+=`<tr><td colspan="3" style="padding-left:10px">- ${r}</td></tr>`;
+rows+=`<tr><td colspan="3" style="padding-left:10px;font-size:10px;">- ${r}</td></tr>`;
 });
 });
 
-let qrURL=`https://chart.googleapis.com/chart?chs=120x120&cht=qr&chl=${encodeURIComponent("Order:"+lastData.orderID)}`;
+let qrURL=`https://chart.googleapis.com/chart?chs=120x120&cht=qr&chl=${encodeURIComponent("Order:"+lastData.orderID+"|Total:"+lastPayload.total)}`;
 
 let win=window.open("","","width=300,height=700");
 
@@ -280,8 +283,8 @@ body{
 font-family:monospace;
 width:220px;
 margin:auto;
-font-size:12px;
-line-height:1.6;
+font-size:11px;
+line-height:1.4;
 }
 
 .center{text-align:center;}
@@ -291,16 +294,16 @@ width:100%;
 border-collapse:collapse;
 }
 
-th{
-text-align:left;
-border-bottom:1px dashed black;
-}
-
-td{padding:2px 0;}
+td{padding:1px 0;}
 
 .line{
 border-top:1px dashed black;
-margin:8px 0;
+margin:6px 0;
+}
+
+.small{
+font-size:10px;
+opacity:0.8;
 }
 
 </style>
@@ -309,10 +312,10 @@ margin:8px 0;
 <body>
 
 <div class="center">
-<img src="https://i.imgur.com/MubvKvS.png" width="35"><br>
-Donusaurus<br>
-Cabang Sungai Jawi<br>
-Jln. H Rais A Rahman No.171B
+<img src="https://i.imgur.com/MubvKvS.png" style="width:50px;"><br>
+<b>DONUSAURUS</b><br>
+<span class="small">Sungai Jawi</span><br>
+<span class="small">Jl. H Rais A Rahman No.171B</span>
 </div>
 
 <div class="line"></div>
@@ -323,11 +326,6 @@ Tanggal  : ${new Date().toLocaleString("id-ID")}
 <div class="line"></div>
 
 <table>
-<tr>
-<th>Item</th>
-<th>Harga</th>
-<th>Subtotal</th>
-</tr>
 ${rows}
 </table>
 
@@ -348,10 +346,17 @@ ${rows}
 
 <div class="line"></div>
 
-<div class="center">-------- Thankyou --------</div>
+<div class="center small">Scan untuk cek order</div>
 
 <div class="center">
-<img src="${qrURL}" width="100">
+<img src="${qrURL}" width="80">
+</div>
+
+<div class="center small">-------- Thankyou --------</div>
+
+<div class="center small">
+Follow us on Instagram<br>
+@donusaurus
 </div>
 
 <script>
