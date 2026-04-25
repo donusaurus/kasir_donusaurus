@@ -5,10 +5,25 @@
 <title>Donusaurus POS 🦖</title>
 
 <style>
-body{font-family:Arial;background:#f5f5f5;padding:20px;}
-.box{background:white;padding:15px;margin-bottom:15px;border-radius:10px;}
-button{margin:3px;padding:6px 10px;}
+body{
+  font-family:Arial;
+  background:#f5f5f5;
+  padding:20px;
+}
+
+.box{
+  background:white;
+  padding:15px;
+  margin-bottom:15px;
+  border-radius:10px;
+}
+
+button{
+  margin:3px;
+  padding:6px 10px;
+}
 </style>
+
 </head>
 
 <body>
@@ -25,7 +40,6 @@ button{margin:3px;padding:6px 10px;}
 
 Jumlah:
 <input type="number" id="qty" value="1" min="1">
-
 </div>
 
 <div class="box">
@@ -48,7 +62,7 @@ Jumlah:
 
 <br><br>
 <button onclick="checkout()">💰 Bayar</button>
-<button onclick="printNota()">🖨️ Print</button>
+<button onclick="printNota()">🖨️ Print / Save PDF</button>
 </div>
 
 <script>
@@ -73,8 +87,7 @@ menu.forEach(r=>pilihan[r]=0);
 function renderRasa(){
 let html="";
 menu.forEach(r=>{
-html+=`
-${r}
+html+=`${r}
 <button onclick="add('${r}')">+</button>
 ${pilihan[r]}
 <button onclick="minus('${r}')">-</button><br>`;
@@ -84,24 +97,23 @@ updateInfo();
 }
 
 function getConfig(){
-let tipe = document.getElementById("tipe").value;
-let qty = parseInt(document.getElementById("qty").value);
+let tipe=document.getElementById("tipe").value;
+let qty=parseInt(document.getElementById("qty").value);
 
-let totalPcs = 0;
-let harga = 0;
+let totalPcs=0;
+let harga=0;
 
 if(tipe==="pcs"){
-  totalPcs = qty;
-  harga = 8000 * qty;
+  totalPcs=qty;
+  harga=8000*qty;
 }
 
 if(tipe==="box"){
-  totalPcs = qty * 6;
-  if(qty==1) harga = 45000;
-  else harga = 42500 * qty;
+  totalPcs=qty*6;
+  harga=(qty==1)?45000:42500*qty;
 }
 
-return {tipe, qty, totalPcs, harga};
+return {tipe,qty,totalPcs,harga};
 }
 
 function add(r){
@@ -125,13 +137,13 @@ return Object.values(pilihan).reduce((a,b)=>a+b,0);
 function updateInfo(){
 let max=getConfig().totalPcs;
 let total=totalDipilih();
-document.getElementById("info").innerText =
+document.getElementById("info").innerText=
 `Dipilih ${total}/${max} | Sisa ${max-total}`;
 }
 
 function addToCart(){
 
-let cfg = getConfig();
+let cfg=getConfig();
 
 if(totalDipilih()!==cfg.totalPcs){
 alert("Jumlah rasa belum sesuai!");
@@ -146,13 +158,13 @@ rasaDipilih.push(r+" ("+pilihan[r]+"x)");
 }
 
 let label = cfg.tipe==="pcs"
-  ? cfg.qty+" pcs"
-  : cfg.qty+"x Donat (6 pcs)";
+? cfg.qty+" pcs"
+: cfg.qty+"x Donat (6 pcs)";
 
 cart.push({
-item: label,
-rasa: rasaDipilih.join(", "),
-price: cfg.harga
+item:label,
+rasa:rasaDipilih.join(", "),
+price:cfg.harga
 });
 
 menu.forEach(r=>pilihan[r]=0);
@@ -215,58 +227,82 @@ renderCart();
 }
 
 function printNota(){
+
 if(!lastData){
 alert("Belum ada transaksi!");
 return;
 }
 
-let items = lastPayload.item.split(" | ");
-let harga = lastPayload.harga.split(" | ").map(x=>parseInt(x));
+let items=lastPayload.item.split(" | ");
+let harga=lastPayload.harga.split(" | ").map(x=>parseInt(x));
+let rasaAll=lastPayload.detailRasa.split(" | ");
 
 function rp(n){return n.toLocaleString("id-ID");}
 
-let itemLines="";
+let rows="";
 
 items.forEach((it,i)=>{
-
 let h=harga[i];
 
-itemLines+=`
-<div class="row">
-  <span>${it}</span>
-  <span>${rp(h)}</span>
-  <span>${rp(h)}</span>
-</div>
-`;
+rows+=`
+<tr>
+<td>${it}</td>
+<td style="text-align:right">${rp(h)}</td>
+<td style="text-align:right">${rp(h)}</td>
+</tr>`;
 
-let rasaList = lastPayload.detailRasa.split(" | ")[i] || "";
-
-rasaList.split(", ").forEach(r=>{
-itemLines+=`<div class="sub">- ${r}</div>`;
+let rasa=rasaAll[i]||"";
+rasa.split(", ").forEach(r=>{
+rows+=`<tr><td colspan="3" style="padding-left:10px">- ${r}</td></tr>`;
+});
 });
 
-itemLines+=`<br>`;
-});
+let qrURL=`https://chart.googleapis.com/chart?chs=120x120&cht=qr&chl=${encodeURIComponent("Order:"+lastData.orderID)}`;
 
-let qrURL = `https://chart.googleapis.com/chart?chs=120x120&cht=qr&chl=${encodeURIComponent("Order:"+lastData.orderID)}`;
-
-let win = window.open("", "", "width=300,height=700");
+let win=window.open("","","width=300,height=700");
 
 win.document.write(`
 <html>
 <head>
 <style>
+
+@media print {
+  @page {
+    size: 58mm auto;
+    margin: 0;
+  }
+  body {
+    width: 58mm;
+  }
+}
+
 body{
-font-family: monospace;
+font-family:monospace;
 width:220px;
-padding:10px;
+margin:auto;
 font-size:12px;
 line-height:1.6;
 }
+
 .center{text-align:center;}
-.row{display:grid;grid-template-columns:1fr auto auto;}
-.sub{padding-left:10px;}
-hr{border-top:1px dashed black;margin:8px 0;}
+
+table{
+width:100%;
+border-collapse:collapse;
+}
+
+th{
+text-align:left;
+border-bottom:1px dashed black;
+}
+
+td{padding:2px 0;}
+
+.line{
+border-top:1px dashed black;
+margin:8px 0;
+}
+
 </style>
 </head>
 
@@ -279,32 +315,38 @@ Cabang Sungai Jawi<br>
 Jln. H Rais A Rahman No.171B
 </div>
 
-<hr>
+<div class="line"></div>
 
 Order ID : #${lastData.orderID} / ${lastData.kodeUnik}<br>
 Tanggal  : ${new Date().toLocaleString("id-ID")}
 
-<hr>
+<div class="line"></div>
 
-<div class="row">
-<b>Item</b><b>Harga</b><b>Subtotal</b>
-</div>
+<table>
+<tr>
+<th>Item</th>
+<th>Harga</th>
+<th>Subtotal</th>
+</tr>
+${rows}
+</table>
 
-<hr>
+<div class="line"></div>
 
-${itemLines}
+<table>
+<tr>
+<td>Total</td>
+<td></td>
+<td style="text-align:right">Rp${rp(lastPayload.total)}</td>
+</tr>
+<tr>
+<td>Metode</td>
+<td></td>
+<td style="text-align:right">${lastPayload.metode}</td>
+</tr>
+</table>
 
-<hr>
-
-<div class="row">
-<span>Total</span><span></span><span>Rp${rp(lastPayload.total)}</span>
-</div>
-
-<div class="row">
-<span>Metode</span><span></span><span>${lastPayload.metode}</span>
-</div>
-
-<hr>
+<div class="line"></div>
 
 <div class="center">-------- Thankyou --------</div>
 
