@@ -16,15 +16,14 @@ button{margin:3px;padding:6px 10px;}
 <h2>🦖 Donusaurus POS</h2>
 
 <div class="box">
-<h3>Pilih Paket</h3>
+<h3>Pilih Tipe</h3>
 
-<select id="jenis">
-<option value="1">1 pcs - 8000</option>
-<option value="3">3 pcs - 24000</option>
-<option value="6">1 Box (6 pcs - 45000)</option>
+<select id="tipe">
+<option value="pcs">PCS</option>
+<option value="box">BOX</option>
 </select>
 
-Qty:
+Jumlah:
 <input type="number" id="qty" value="1" min="1">
 
 </div>
@@ -86,22 +85,31 @@ document.getElementById("rasaList").innerHTML=html;
 updateInfo();
 }
 
+// 🔥 CONFIG UTAMA (INI YANG KAMU MAU)
 function getConfig(){
-let jenis=parseInt(document.getElementById("jenis").value);
-let qty=parseInt(document.getElementById("qty").value);
 
-let totalPcs = jenis * qty;
+let tipe = document.getElementById("tipe").value;
+let qty = parseInt(document.getElementById("qty").value);
+
+let totalPcs = 0;
 let harga = 0;
 
-// 🔥 FIX HARGA BERDASARKAN PILIHAN
-if(jenis==1) harga = 8000 * qty;
-if(jenis==3) harga = 24000 * qty;
-if(jenis==6){
-  if(qty>=2) harga = 42500 * qty;
-  else harga = 45000 * qty;
+if(tipe==="pcs"){
+  totalPcs = qty;
+  harga = 8000 * qty;
 }
 
-return {totalPcs, harga, jenis, qty};
+if(tipe==="box"){
+  totalPcs = qty * 6;
+
+  if(qty==1){
+    harga = 45000;
+  }else{
+    harga = 42500 * qty;
+  }
+}
+
+return {tipe, qty, totalPcs, harga};
 }
 
 function add(r){
@@ -145,8 +153,12 @@ rasaDipilih.push(r+" ("+pilihan[r]+"x)");
 }
 }
 
+let label = cfg.tipe==="pcs"
+  ? cfg.qty+" pcs"
+  : cfg.qty+" box ("+cfg.totalPcs+" pcs)";
+
 cart.push({
-item: cfg.qty+" x "+cfg.jenis+" pcs",
+item: label,
 rasa: rasaDipilih.join(", "),
 price: cfg.harga
 });
