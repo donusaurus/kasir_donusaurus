@@ -5,28 +5,9 @@
 <title>Donusaurus POS 🦖</title>
 
 <style>
-body{
-  font-family:Arial;
-  background:#f5f5f5;
-  padding:20px;
-}
-
-.box{
-  background:white;
-  padding:15px;
-  margin-bottom:15px;
-  border-radius:10px;
-}
-
-button{
-  margin:3px;
-  padding:6px 10px;
-}
-
-.qty-btn{
-  font-size:16px;
-}
-
+body{font-family:Arial;background:#f5f5f5;padding:20px;}
+.box{background:white;padding:15px;margin-bottom:15px;border-radius:10px;}
+button{margin:3px;padding:6px 10px;}
 </style>
 </head>
 
@@ -35,40 +16,40 @@ button{
 <h2>🦖 Donusaurus POS</h2>
 
 <div class="box">
-  <h3>Pilih Paket</h3>
+<h3>Pilih Paket</h3>
 
-  <select id="jenis">
-    <option value="1">1 pcs</option>
-    <option value="3">3 pcs</option>
-    <option value="6">Box (6 pcs)</option>
-  </select>
+<select id="jenis">
+<option value="1">1 pcs - 8000</option>
+<option value="3">3 pcs - 24000</option>
+<option value="6">1 Box (6 pcs - 45000)</option>
+</select>
 
-  <input type="number" id="qty" value="1" min="1">
+Qty:
+<input type="number" id="qty" value="1" min="1">
+
 </div>
 
 <div class="box">
-  <h3>Pilih Rasa</h3>
-  <div id="rasaList"></div>
-
-  <p id="info"></p>
-
-  <button onclick="addToCart()">+ Tambah ke Keranjang</button>
+<h3>Pilih Rasa</h3>
+<div id="rasaList"></div>
+<p id="info"></p>
+<button onclick="addToCart()">+ Tambah</button>
 </div>
 
 <div class="box">
-  <h3>Keranjang</h3>
-  <div id="cart"></div>
+<h3>Keranjang</h3>
+<div id="cart"></div>
 
-  <h3>Total: Rp<span id="total">0</span></h3>
+<h3>Total: Rp<span id="total">0</span></h3>
 
-  <select id="metode">
-    <option>Cash</option>
-    <option>QRIS</option>
-  </select>
+<select id="metode">
+<option>Cash</option>
+<option>QRIS</option>
+</select>
 
-  <br><br>
-  <button onclick="checkout()">💰 Bayar</button>
-  <button onclick="printNota()">🖨️ Print</button>
+<br><br>
+<button onclick="checkout()">💰 Bayar</button>
+<button onclick="printNota()">🖨️ Print</button>
 </div>
 
 <div id="struk" style="display:none;"></div>
@@ -77,7 +58,6 @@ button{
 
 const API_URL = "https://script.google.com/macros/s/AKfycbwCcACselUrqfBcaxrif7rVGjyJVjUGNc2N2XqSgyZMtqh8FM6Ta8iUVsz5BEDpXPzuow/exec";
 
-// FULL VARIAN
 const menu = [
 "Abon","Blueberry","Caramel","Ceres Jadul","Cheese",
 "Choco Ceres","Choco Cookies","Choco Crunch","Choco Peanut",
@@ -94,165 +74,166 @@ let lastPayload = null;
 menu.forEach(r=>pilihan[r]=0);
 
 function renderRasa(){
-  let html="";
-  menu.forEach(r=>{
-    html+=`
-    ${r}
-    <button class="qty-btn" onclick="add('${r}')">+</button>
-    <button class="qty-btn" onclick="minus('${r}')">-</button>
-    <span id="q-${r}">0</span><br>`;
-  });
-  document.getElementById("rasaList").innerHTML=html;
-  updateInfo();
+let html="";
+menu.forEach(r=>{
+html+=`
+${r}
+<button onclick="add('${r}')">+</button>
+${pilihan[r]}
+<button onclick="minus('${r}')">-</button><br>`;
+});
+document.getElementById("rasaList").innerHTML=html;
+updateInfo();
 }
 
-function getMax(){
-  let jenis=parseInt(document.getElementById("jenis").value);
-  let qty=parseInt(document.getElementById("qty").value);
-  return jenis*qty;
+function getConfig(){
+let jenis=parseInt(document.getElementById("jenis").value);
+let qty=parseInt(document.getElementById("qty").value);
+
+let totalPcs = jenis * qty;
+let harga = 0;
+
+// 🔥 FIX HARGA BERDASARKAN PILIHAN
+if(jenis==1) harga = 8000 * qty;
+if(jenis==3) harga = 24000 * qty;
+if(jenis==6){
+  if(qty>=2) harga = 42500 * qty;
+  else harga = 45000 * qty;
+}
+
+return {totalPcs, harga, jenis, qty};
 }
 
 function add(r){
-  if(totalDipilih()<getMax()){
-    pilihan[r]++;
-    document.getElementById("q-"+r).innerText=pilihan[r];
-    updateInfo();
-  }
+if(totalDipilih()<getConfig().totalPcs){
+pilihan[r]++;
+renderRasa();
+}
 }
 
 function minus(r){
-  if(pilihan[r]>0){
-    pilihan[r]--;
-    document.getElementById("q-"+r).innerText=pilihan[r];
-    updateInfo();
-  }
+if(pilihan[r]>0){
+pilihan[r]--;
+renderRasa();
+}
 }
 
 function totalDipilih(){
-  return Object.values(pilihan).reduce((a,b)=>a+b,0);
+return Object.values(pilihan).reduce((a,b)=>a+b,0);
 }
 
 function updateInfo(){
-  let max=getMax();
-  let total=totalDipilih();
-  document.getElementById("info").innerText =
-  `Dipilih ${total}/${max} | Sisa ${max-total}`;
-}
-
-function getHarga(totalPcs){
-  if(totalPcs>=12) return (totalPcs/6)*42500;
-  if(totalPcs>=6) return (totalPcs/6)*45000;
-  if(totalPcs>=3) return 24000;
-  return 8000;
+let max=getConfig().totalPcs;
+let total=totalDipilih();
+document.getElementById("info").innerText =
+`Dipilih ${total}/${max} | Sisa ${max-total}`;
 }
 
 function addToCart(){
 
-  let max=getMax();
-  let total=totalDipilih();
+let cfg = getConfig();
 
-  if(total!==max){
-    alert("Jumlah rasa belum sesuai!");
-    return;
-  }
+if(totalDipilih()!==cfg.totalPcs){
+alert("Jumlah rasa belum sesuai!");
+return;
+}
 
-  let rasaDipilih=[];
-  for(let r in pilihan){
-    if(pilihan[r]>0){
-      rasaDipilih.push(r+" ("+pilihan[r]+"x)");
-    }
-  }
+let rasaDipilih=[];
+for(let r in pilihan){
+if(pilihan[r]>0){
+rasaDipilih.push(r+" ("+pilihan[r]+"x)");
+}
+}
 
-  let harga=getHarga(max);
+cart.push({
+item: cfg.qty+" x "+cfg.jenis+" pcs",
+rasa: rasaDipilih.join(", "),
+price: cfg.harga
+});
 
-  cart.push({
-    item:max+" pcs",
-    rasa:rasaDipilih.join(", "),
-    price:harga
-  });
-
-  pilihan={}; menu.forEach(r=>pilihan[r]=0);
-  renderRasa();
-  renderCart();
+menu.forEach(r=>pilihan[r]=0);
+renderRasa();
+renderCart();
 }
 
 function renderCart(){
-  let html="";
-  let total=0;
+let html="";
+let total=0;
 
-  cart.forEach((c,i)=>{
-    total+=c.price;
-    html+=`
-    ${c.item} | ${c.rasa} | Rp${c.price}
-    <button onclick="hapus(${i})">❌</button><br>`;
-  });
+cart.forEach((c,i)=>{
+total+=c.price;
+html+=`
+${c.item} | Rp${c.price}
+<br>${c.rasa}
+<button onclick="hapus(${i})">❌</button><br><br>`;
+});
 
-  document.getElementById("cart").innerHTML=html;
-  document.getElementById("total").innerText=total;
+document.getElementById("cart").innerHTML=html;
+document.getElementById("total").innerText=total;
 }
 
 function hapus(i){
-  cart.splice(i,1);
-  renderCart();
+cart.splice(i,1);
+renderCart();
 }
 
 async function checkout(){
 
-  if(cart.length===0){
-    alert("Keranjang kosong!");
-    return;
-  }
+if(cart.length===0){
+alert("Keranjang kosong!");
+return;
+}
 
-  let metode=document.getElementById("metode").value;
-  let total=cart.reduce((s,c)=>s+c.price,0);
+let metode=document.getElementById("metode").value;
+let total=cart.reduce((s,c)=>s+c.price,0);
 
-  let payload={
-    item:cart.map(c=>c.item).join(" | "),
-    detailRasa:cart.map(c=>c.rasa).join(" | "),
-    harga:cart.map(c=>c.price).join(" | "),
-    total:total,
-    metode:metode
-  };
+let payload={
+item:cart.map(c=>c.item).join(" | "),
+detailRasa:cart.map(c=>c.rasa).join(" | "),
+harga:cart.map(c=>c.price).join(" | "),
+total:total,
+metode:metode
+};
 
-  let res=await fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify(payload)
-  });
+let res=await fetch(API_URL,{
+method:"POST",
+body:JSON.stringify(payload)
+});
 
-  let data=await res.json();
+let data=await res.json();
 
-  if(data.status==="success"){
-    window.open(data.invoice,"_blank");
-    lastData=data;
-    lastPayload=payload;
-  }
+if(data.status==="success"){
+window.open(data.invoice,"_blank");
+lastData=data;
+lastPayload=payload;
+}
 
-  cart=[];
-  renderCart();
+cart=[];
+renderCart();
 }
 
 function printNota(){
-  if(!lastData){ alert("Belum ada transaksi"); return; }
+if(!lastData){ alert("Belum ada transaksi"); return; }
 
-  let s=document.getElementById("struk");
+let s=document.getElementById("struk");
 
-  s.innerHTML=`
-  <div style="width:220px;font-family:Courier New;font-size:12px;">
-  <center>
-  <img src="https://i.imgur.com/MubvKvS.png" width="40"><br>
-  Donusaurus
-  </center>
-  <hr>
-  ${lastPayload.item}<br>
-  ${lastPayload.detailRasa}
-  <hr>
-  Total Rp${lastPayload.total}<br>
-  ${lastPayload.metode}
-  </div>`;
+s.innerHTML=`
+<div style="width:220px;font-family:Courier New;font-size:12px;">
+<center>
+<img src="https://i.imgur.com/MubvKvS.png" width="40"><br>
+Donusaurus
+</center>
+<hr>
+${lastPayload.item}<br>
+${lastPayload.detailRasa}
+<hr>
+Total Rp${lastPayload.total}<br>
+${lastPayload.metode}
+</div>`;
 
-  s.style.display="block";
-  window.print();
-  s.style.display="none";
+s.style.display="block";
+window.print();
+s.style.display="none";
 }
 
 renderRasa();
