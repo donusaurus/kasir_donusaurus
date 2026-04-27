@@ -20,9 +20,6 @@ button{
   margin:5px;
   padding:6px 10px;
 }
-#afterCheckout{
-  margin-top:15px;
-}
 </style>
 </head>
 
@@ -85,28 +82,19 @@ Jumlah:
 <script>
 
 const API_URL="https://script.google.com/macros/s/AKfycbwCcACselUrqfBcaxrif7rVGjyJVjUGNc2N2XqSgyZMtqh8FM6Ta8iUVsz5BEDpXPzuow/exec";
-
 const BASE_URL="https://anjelia89.github.io/kasir_donusaurus/";
 
-const menu=[
-"Abon","Blueberry","Caramel","Ceres Jadul","Cheese",
-"Choco Ceres","Choco Cookies","Choco Crunch","Choco Peanut",
-"Creme Brule","Gula Halus","Lotus Biscoff","Matcha Crunch",
-"Oreo","Original Glaze","Pistachio","Red Velvet","Srikaya",
-"Strawberry Sprinkle","Tiramisu Almond"
-];
+const menu=["Abon","Blueberry","Caramel","Ceres Jadul","Cheese","Choco Ceres","Choco Cookies","Choco Crunch","Choco Peanut","Creme Brule","Gula Halus","Lotus Biscoff","Matcha Crunch","Oreo","Original Glaze","Pistachio","Red Velvet","Srikaya","Strawberry Sprinkle","Tiramisu Almond"];
 
-let pilihan={}, cart=[], lastData=null, lastPayload=null;
+let pilihan={}, cart=[];
 menu.forEach(r=>pilihan[r]=0);
 
+// 🔥 MODE STRUK
 function getParam(name){
 return new URL(window.location.href).searchParams.get(name);
 }
 
-// =====================
-// MODE STRUK
-// =====================
-window.onload=async function(){
+window.addEventListener("load", async function(){
 
 let id=getParam("id");
 
@@ -138,33 +126,20 @@ rows+="<br>";
 
 document.body.innerHTML=`
 <div style="max-width:300px;margin:auto;font-family:monospace;padding:20px;">
-
 <div style="text-align:center;">
-Donusaurus<br>
-Cabang Sungai Jawi<br>
-Jl. H Rais A Rahman No.171B
+Donusaurus<br>Cabang Sungai Jawi<br>
 </div>
-
 <hr>
-
 Order ID : #${data.orderID} / ${data.kodeUnik}
-
 <hr>
-
 ${rows}
-
 <hr>
-
 Total : Rp${rp(data.total)}<br>
 Metode : ${data.metode}
-
 <hr>
-
 <div style="text-align:center;">
-Thank you<br>
-@donusaurus
+Thank you<br>@donusaurus
 </div>
-
 </div>
 `;
 
@@ -172,11 +147,9 @@ return;
 }
 
 renderRasa();
-}
+});
 
-// =====================
-// POS
-// =====================
+// POS functions (SAMA)
 function renderRasa(){
 let html="";
 menu.forEach(r=>{
@@ -194,7 +167,6 @@ let tipe=document.getElementById("tipe").value;
 let qty=parseInt(document.getElementById("qty").value)||1;
 
 let totalPcs=0,harga=0;
-
 if(tipe==="pcs"){totalPcs=qty;harga=8000*qty;}
 if(tipe==="box"){totalPcs=qty*6;harga=(qty==1)?45000:42500*qty;}
 
@@ -224,7 +196,6 @@ document.getElementById("info").innerText=`Dipilih ${total}/${max} | Sisa ${max-
 }
 
 function addToCart(){
-
 let cfg=getConfig();
 if(totalDipilih()!==cfg.totalPcs){
 alert("Jumlah rasa belum sesuai!");
@@ -242,11 +213,7 @@ let label=cfg.tipe==="pcs"
 ? cfg.qty+"x Pcs Donat"
 : cfg.qty+"x Box Donat (6 pcs)";
 
-cart.push({
-item:label,
-rasa:rasaDipilih.join(", "),
-price:cfg.harga
-});
+cart.push({item:label,rasa:rasaDipilih.join(", "),price:cfg.harga});
 
 menu.forEach(r=>pilihan[r]=0);
 renderRasa();
@@ -255,20 +222,12 @@ renderCart();
 
 function renderCart(){
 let html="",total=0;
-
 cart.forEach((c,i)=>{
 total+=c.price;
-html+=`${c.item} | Rp${c.price}
-<button onclick="hapus(${i})">❌</button><br>${c.rasa}<br><br>`;
+html+=`${c.item} | Rp${c.price}<br>${c.rasa}<br><br>`;
 });
-
 document.getElementById("cart").innerHTML=html;
 document.getElementById("total").innerText=total;
-}
-
-function hapus(i){
-cart.splice(i,1);
-renderCart();
 }
 
 function autoMetode(){
@@ -280,19 +239,8 @@ document.getElementById("metode").value="Cash";
 }
 }
 
-// =====================
-// CHECKOUT + BUTTON STRUK
-// =====================
+// 🔥 CHECKOUT FINAL
 async function checkout(){
-
-if(cart.length===0){
-alert("Keranjang kosong!");
-return;
-}
-
-let nama=document.getElementById("nama").value||"-";
-let sumber=document.getElementById("sumber").value;
-let metode=document.getElementById("metode").value;
 
 let total=cart.reduce((s,c)=>s+c.price,0);
 
@@ -301,8 +249,7 @@ item:cart.map(c=>c.item).join(" | "),
 detailRasa:cart.map(c=>c.rasa).join(" | "),
 harga:cart.map(c=>c.price).join(" | "),
 total:total,
-metode:metode,
-customer:nama+" ("+sumber+")"
+metode:document.getElementById("metode").value
 };
 
 let res=await fetch(API_URL,{method:"POST",body:JSON.stringify(payload)});
@@ -310,18 +257,15 @@ let data=await res.json();
 
 if(data.status==="success"){
 
-let linkStruk=BASE_URL+"?id="+data.orderID;
+let link=BASE_URL+"?id="+data.fullID;
 
 document.getElementById("afterCheckout").innerHTML=`
 <div class="box">
 <h3>Order Berhasil!</h3>
-
-<button onclick="window.open('${linkStruk}')">👀 Lihat Struk</button>
-<button onclick="navigator.clipboard.writeText('${linkStruk}')">📋 Copy Link</button>
-
+<button onclick="window.open('${link}')">Lihat Struk</button>
+<button onclick="navigator.clipboard.writeText('${link}')">Copy Link</button>
 <br><br>
-
-<img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(linkStruk)}">
+<img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(link)}">
 </div>
 `;
 
