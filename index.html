@@ -187,7 +187,7 @@ cart.splice(i,1);
 renderCart();
 }
 
-// 🔥 AUTO METODE
+// AUTO METODE
 function autoMetode(){
 let s=document.getElementById("sumber").value;
 if(["GoFood","GrabFood","ShopeeFood"].includes(s)){
@@ -197,7 +197,7 @@ document.getElementById("metode").value="Cash";
 }
 }
 
-// 🔥 CHECKOUT
+// CHECKOUT
 async function checkout(){
 
 if(cart.length===0){
@@ -233,7 +233,7 @@ cart=[];
 renderCart();
 }
 
-// 🔥 PRINT (STYLE LAMA DIPERTAHANKAN)
+// PRINT FIX ALIGN
 function printNota(){
 
 if(!lastData){
@@ -275,8 +275,9 @@ win.document.write(`
 body{
 font-family:monospace;
 font-size:12px;
-text-align:center;
+text-align:left;
 }
+.center{text-align:center;}
 .line{
 border-top:1px dashed black;
 margin:6px 0;
@@ -286,9 +287,11 @@ margin:6px 0;
 
 <body>
 
+<div class="center">
 Donusaurus<br>
 Cabang Sungai Jawi<br>
 Jl. H Rais A Rahman No.171B
+</div>
 
 <div class="line"></div>
 
@@ -307,10 +310,11 @@ Metode       ${lastPayload.metode}
 
 <div class="line"></div>
 
+<div class="center">
 Thank you<br>
 @donusaurus<br><br>
-
 <img src="${qrURL}" width="70">
+</div>
 
 <script>
 window.onload=function(){
