@@ -93,6 +93,85 @@ const menu=[
 let pilihan={}, cart=[], lastData=null, lastPayload=null;
 menu.forEach(r=>pilihan[r]=0);
 
+// =====================
+// MODE STRUK (JALAN DULUAN)
+// =====================
+function getParam(name){
+return new URL(window.location.href).searchParams.get(name);
+}
+
+window.onload=async function(){
+
+let id=getParam("id");
+
+if(id){
+
+let res=await fetch(API_URL+"?id="+id);
+let data=await res.json();
+
+if(data.error){
+document.body.innerHTML="Struk tidak ditemukan";
+return;
+}
+
+function rp(n){return Number(n).toLocaleString("id-ID");}
+
+let items=data.item.split(" | ");
+let rasa=data.rasa.split(" | ");
+let harga=data.harga.split(" | ").map(x=>parseInt(x));
+
+let rows="";
+
+items.forEach((it,i)=>{
+rows+=`${it} @Rp${rp(harga[i])}<br>`;
+rasa[i].split(", ").forEach(r=>{
+rows+=`- ${r}<br>`;
+});
+rows+="<br>";
+});
+
+document.body.innerHTML=`
+<div style="max-width:300px;margin:auto;font-family:monospace;padding:20px;">
+
+<div style="text-align:center;">
+Donusaurus<br>
+Cabang Sungai Jawi<br>
+Jl. H Rais A Rahman No.171B
+</div>
+
+<hr>
+
+Order ID : #${data.orderID} / ${data.kodeUnik}
+
+<hr>
+
+${rows}
+
+<hr>
+
+Total : Rp${rp(data.total)}<br>
+Metode : ${data.metode}
+
+<hr>
+
+<div style="text-align:center;">
+Thank you<br>
+@donusaurus
+</div>
+
+</div>
+`;
+
+return; // 🔥 STOP POS JALAN
+}
+
+renderRasa();
+
+}
+
+// =====================
+// POS FUNCTION
+// =====================
 function renderRasa(){
 let html="";
 menu.forEach(r=>{
@@ -187,7 +266,6 @@ cart.splice(i,1);
 renderCart();
 }
 
-// AUTO METODE
 function autoMetode(){
 let s=document.getElementById("sumber").value;
 if(["GoFood","GrabFood","ShopeeFood"].includes(s)){
@@ -197,7 +275,6 @@ document.getElementById("metode").value="Cash";
 }
 }
 
-// CHECKOUT
 async function checkout(){
 
 if(cart.length===0){
@@ -233,7 +310,6 @@ cart=[];
 renderCart();
 }
 
-// PRINT FIX ALIGN
 function printNota(){
 
 if(!lastData){
@@ -241,27 +317,7 @@ alert("Belum ada transaksi!");
 return;
 }
 
-let items=lastPayload.item.split(" | ");
-let harga=lastPayload.harga.split(" | ").map(x=>parseInt(x));
-let rasa=lastPayload.detailRasa.split(" | ");
-
-function rp(n){return n.toLocaleString("id-ID");}
-
-let rows="";
-
-items.forEach((it,i)=>{
-let totalHarga=harga[i];
-let qty=parseInt(it.split("x")[0])||1;
-let hargaSatuan=Math.round(totalHarga/qty);
-
-rows+=`${it} @Rp${rp(hargaSatuan)}        Rp${rp(totalHarga)}<br>`;
-rasa[i].split(", ").forEach(r=>{
-rows+=`&nbsp;&nbsp;- ${r}<br>`;
-});
-rows+=`<br>`;
-});
-
-let baseURL=window.location.origin+window.location.pathname;
+let baseURL="https://anjelia89.github.io/kasir_donusaurus/";
 let linkStruk=baseURL+"?id="+lastData.orderID;
 
 let qrURL="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data="+encodeURIComponent(linkStruk);
@@ -270,59 +326,19 @@ let win=window.open("","","width=300,height=700");
 
 win.document.write(`
 <html>
-<head>
-<style>
-body{
-font-family:monospace;
-font-size:12px;
-text-align:left;
-}
-.center{text-align:center;}
-.line{
-border-top:1px dashed black;
-margin:6px 0;
-}
-</style>
-</head>
+<body style="font-family:monospace;font-size:12px;text-align:center;">
 
-<body>
+Donusaurus<br><br>
 
-<div class="center">
-Donusaurus<br>
-Cabang Sungai Jawi<br>
-Jl. H Rais A Rahman No.171B
-</div>
+Order ID : #${lastData.orderID}<br>
+Customer : ${lastPayload.customer}<br><br>
 
-<div class="line"></div>
+Total : Rp${lastPayload.total}<br>
+Metode : ${lastPayload.metode}<br>
 
-Order ID : #${lastData.orderID} / ${lastData.kodeUnik}<br>
-Customer : ${lastPayload.customer}<br>
-Tanggal  : ${new Date().toLocaleString("id-ID")}
+<hr>
 
-<div class="line"></div>
-
-${rows}
-
-<div class="line"></div>
-
-Total        Rp${rp(lastPayload.total)}<br>
-Metode       ${lastPayload.metode}
-
-<div class="line"></div>
-
-<div class="center">
-Thank you<br>
-@donusaurus<br><br>
 <img src="${qrURL}" width="70">
-</div>
-
-<script>
-window.onload=function(){
-setTimeout(function(){
-window.print();
-},500);
-}
-<\/script>
 
 </body>
 </html>
@@ -330,8 +346,6 @@ window.print();
 
 win.document.close();
 }
-
-renderRasa();
 
 </script>
 
