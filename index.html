@@ -187,6 +187,7 @@ cart.splice(i,1);
 renderCart();
 }
 
+// 🔥 AUTO METODE
 function autoMetode(){
 let s=document.getElementById("sumber").value;
 if(["GoFood","GrabFood","ShopeeFood"].includes(s)){
@@ -196,6 +197,7 @@ document.getElementById("metode").value="Cash";
 }
 }
 
+// 🔥 CHECKOUT
 async function checkout(){
 
 if(cart.length===0){
@@ -231,6 +233,7 @@ cart=[];
 renderCart();
 }
 
+// 🔥 PRINT (STYLE LAMA DIPERTAHANKAN)
 function printNota(){
 
 if(!lastData){
@@ -245,43 +248,76 @@ let rasa=lastPayload.detailRasa.split(" | ");
 function rp(n){return n.toLocaleString("id-ID");}
 
 let rows="";
+
 items.forEach((it,i)=>{
-rows+=`${it} @Rp${rp(harga[i])}<br>`;
+let totalHarga=harga[i];
+let qty=parseInt(it.split("x")[0])||1;
+let hargaSatuan=Math.round(totalHarga/qty);
+
+rows+=`${it} @Rp${rp(hargaSatuan)}        Rp${rp(totalHarga)}<br>`;
 rasa[i].split(", ").forEach(r=>{
-rows+=`- ${r}<br>`;
+rows+=`&nbsp;&nbsp;- ${r}<br>`;
 });
-rows+="<br>";
+rows+=`<br>`;
 });
 
 let baseURL=window.location.origin+window.location.pathname;
 let linkStruk=baseURL+"?id="+lastData.orderID;
 
-let qrURL="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data="+encodeURIComponent(linkStruk);
+let qrURL="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data="+encodeURIComponent(linkStruk);
 
 let win=window.open("","","width=300,height=700");
 
 win.document.write(`
 <html>
-<body style="font-family:monospace;font-size:12px;text-align:center;">
+<head>
+<style>
+body{
+font-family:monospace;
+font-size:12px;
+text-align:center;
+}
+.line{
+border-top:1px dashed black;
+margin:6px 0;
+}
+</style>
+</head>
 
-Donusaurus<br><br>
+<body>
 
-Order ID : #${lastData.orderID}<br>
-Customer : ${lastPayload.customer}<br><br>
+Donusaurus<br>
+Cabang Sungai Jawi<br>
+Jl. H Rais A Rahman No.171B
+
+<div class="line"></div>
+
+Order ID : #${lastData.orderID} / ${lastData.kodeUnik}<br>
+Customer : ${lastPayload.customer}<br>
+Tanggal  : ${new Date().toLocaleString("id-ID")}
+
+<div class="line"></div>
 
 ${rows}
 
-Total : Rp${rp(lastPayload.total)}<br>
-Metode : ${lastPayload.metode}<br>
+<div class="line"></div>
 
-<hr>
+Total        Rp${rp(lastPayload.total)}<br>
+Metode       ${lastPayload.metode}
 
-Thank you<br>@donusaurus<br><br>
+<div class="line"></div>
+
+Thank you<br>
+@donusaurus<br><br>
 
 <img src="${qrURL}" width="70">
 
 <script>
-window.onload=function(){setTimeout(function(){window.print();},500);}
+window.onload=function(){
+setTimeout(function(){
+window.print();
+},500);
+}
 <\/script>
 
 </body>
@@ -289,35 +325,6 @@ window.onload=function(){setTimeout(function(){window.print();},500);}
 `);
 
 win.document.close();
-}
-
-function getParam(name){
-return new URL(window.location.href).searchParams.get(name);
-}
-
-window.onload=async function(){
-
-let id=getParam("id");
-
-if(id){
-let res=await fetch(API_URL+"?id="+id);
-let data=await res.json();
-
-if(data.error){
-document.body.innerHTML="Struk tidak ditemukan";
-return;
-}
-
-document.body.innerHTML=`
-<div style="font-family:monospace;padding:20px;">
-Donusaurus<br><br>
-Order ID : #${data.orderID}<br><br>
-${data.item}<br>
-${data.rasa}<br><br>
-Total : Rp${data.total}<br>
-Metode : ${data.metode}
-</div>`;
-}
 }
 
 renderRasa();
