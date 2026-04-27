@@ -17,8 +17,11 @@ body{
   border-radius:10px;
 }
 button{
-  margin:3px;
+  margin:5px;
   padding:6px 10px;
+}
+#afterCheckout{
+  margin-top:15px;
 }
 </style>
 </head>
@@ -75,12 +78,15 @@ Jumlah:
 
 <br>
 <button onclick="checkout()">💰 Bayar</button>
-<button onclick="printNota()">🖨️ Print</button>
 </div>
+
+<div id="afterCheckout"></div>
 
 <script>
 
 const API_URL="https://script.google.com/macros/s/AKfycbwCcACselUrqfBcaxrif7rVGjyJVjUGNc2N2XqSgyZMtqh8FM6Ta8iUVsz5BEDpXPzuow/exec";
+
+const BASE_URL="https://anjelia89.github.io/kasir_donusaurus/";
 
 const menu=[
 "Abon","Blueberry","Caramel","Ceres Jadul","Cheese",
@@ -93,13 +99,13 @@ const menu=[
 let pilihan={}, cart=[], lastData=null, lastPayload=null;
 menu.forEach(r=>pilihan[r]=0);
 
-// =====================
-// MODE STRUK (JALAN DULUAN)
-// =====================
 function getParam(name){
 return new URL(window.location.href).searchParams.get(name);
 }
 
+// =====================
+// MODE STRUK
+// =====================
 window.onload=async function(){
 
 let id=getParam("id");
@@ -162,15 +168,14 @@ Thank you<br>
 </div>
 `;
 
-return; // 🔥 STOP POS JALAN
+return;
 }
 
 renderRasa();
-
 }
 
 // =====================
-// POS FUNCTION
+// POS
 // =====================
 function renderRasa(){
 let html="";
@@ -275,6 +280,9 @@ document.getElementById("metode").value="Cash";
 }
 }
 
+// =====================
+// CHECKOUT + BUTTON STRUK
+// =====================
 async function checkout(){
 
 if(cart.length===0){
@@ -301,50 +309,26 @@ let res=await fetch(API_URL,{method:"POST",body:JSON.stringify(payload)});
 let data=await res.json();
 
 if(data.status==="success"){
-lastData=data;
-lastPayload=payload;
-alert("Order berhasil!");
+
+let linkStruk=BASE_URL+"?id="+data.orderID;
+
+document.getElementById("afterCheckout").innerHTML=`
+<div class="box">
+<h3>Order Berhasil!</h3>
+
+<button onclick="window.open('${linkStruk}')">👀 Lihat Struk</button>
+<button onclick="navigator.clipboard.writeText('${linkStruk}')">📋 Copy Link</button>
+
+<br><br>
+
+<img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(linkStruk)}">
+</div>
+`;
+
 }
 
 cart=[];
 renderCart();
-}
-
-function printNota(){
-
-if(!lastData){
-alert("Belum ada transaksi!");
-return;
-}
-
-let baseURL="https://anjelia89.github.io/kasir_donusaurus/";
-let linkStruk=baseURL+"?id="+lastData.orderID;
-
-let qrURL="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data="+encodeURIComponent(linkStruk);
-
-let win=window.open("","","width=300,height=700");
-
-win.document.write(`
-<html>
-<body style="font-family:monospace;font-size:12px;text-align:center;">
-
-Donusaurus<br><br>
-
-Order ID : #${lastData.orderID}<br>
-Customer : ${lastPayload.customer}<br><br>
-
-Total : Rp${lastPayload.total}<br>
-Metode : ${lastPayload.metode}<br>
-
-<hr>
-
-<img src="${qrURL}" width="70">
-
-</body>
-</html>
-`);
-
-win.document.close();
 }
 
 </script>
